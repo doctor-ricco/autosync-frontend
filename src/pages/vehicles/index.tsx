@@ -1,32 +1,56 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Car, RefreshCw } from 'lucide-react';
 import apiService from '../../services/api';
 import { VehicleCard } from './components/VehicleCard';
 import { VehicleFilters } from './components/VehicleFilters';
 import { VehiclePagination } from './components/VehiclePagination';
 
+interface FilterState {
+  brand?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  minYear?: number;
+  maxYear?: number;
+  minMileage?: number;
+  maxMileage?: number;
+  fuelType?: string;
+  transmission?: string;
+  city?: string;
+  search?: string;
+}
+
 export const Vehicles: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalVehicles, setTotalVehicles] = useState(0);
-  const [filters, setFilters] = useState({
-    search: '',
-    brand: '',
-    model: '',
-    min_price: '',
-    max_price: '',
-    min_year: '',
-    max_year: '',
-    fuel_type: '',
-    transmission: '',
+  const [brands, setBrands] = useState<string[]>([]);
+  const [cities, setCities] = useState<string[]>([]);
+  
+  // Inicializar filtros a partir da URL
+  const [filters, setFilters] = useState<FilterState>(() => {
+    const urlFilters: FilterState = {};
+    searchParams.forEach((value, key) => {
+      if (key === 'page') return;
+      if (['minPrice', 'maxPrice', 'minYear', 'maxYear', 'minMileage', 'maxMileage'].includes(key)) {
+        const numValue = Number(value);
+        if (!isNaN(numValue)) {
+          (urlFilters as any)[key] = numValue;
+        }
+      } else {
+        (urlFilters as any)[key] = value;
+      }
+    });
+    return urlFilters;
   });
 
   useEffect(() => {
     loadVehicles();
+    loadFilterOptions();
   }, [currentPage, filters]);
 
   const loadVehicles = async () => {
@@ -37,8 +61,16 @@ export const Vehicles: React.FC = () => {
       // Preparar filtros para a API
       const apiFilters: any = {};
       Object.entries(filters).forEach(([key, value]) => {
-        if (value && value !== '') {
-          apiFilters[key] = value;
+        if (value !== undefined && value !== null && value !== '') {
+          // Converter nomes dos filtros para o formato da API
+          const apiKey = key === 'minPrice' ? 'min_price' :
+                        key === 'maxPrice' ? 'max_price' :
+                        key === 'minYear' ? 'min_year' :
+                        key === 'maxYear' ? 'max_year' :
+                        key === 'minMileage' ? 'min_mileage' :
+                        key === 'maxMileage' ? 'max_mileage' :
+                        key === 'fuelType' ? 'fuel_type' : key;
+          apiFilters[apiKey] = value;
         }
       });
 
@@ -59,19 +91,48 @@ export const Vehicles: React.FC = () => {
     }
   };
 
-  const handleFilterChange = (key: string, value: string) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
-    setCurrentPage(1); // Reset para primeira página quando filtrar
+  const loadFilterOptions = async () => {
+    try {
+      // Carregar marcas e cidades únicas dos veículos
+      const response = await apiService.getVehicles({}, 1);
+      if (response.success) {
+        const allVehicles = response.data;
+        const uniqueBrands = [...new Set(allVehicles.map(v => v.brand).filter((brand): brand is string => Boolean(brand)))].sort();
+        const uniqueCities = [...new Set(allVehicles.map(v => v.stand?.city).filter((city): city is string => Boolean(city)))].sort();
+        setBrands(uniqueBrands);
+        setCities(uniqueCities);
+      }
+    } catch (error) {
+      console.error('Error loading filter options:', error);
+    }
   };
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleFiltersChange = (newFilters: FilterState) => {
+    setFilters(newFilters);
     setCurrentPage(1);
-    loadVehicles();
+    
+    // Atualizar URL com os filtros
+    const params = new URLSearchParams();
+    Object.entries(newFilters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        params.set(key, value.toString());
+      }
+    });
+    setSearchParams(params);
+  };
+
+  const handleClearFilters = () => {
+    setFilters({});
+    setCurrentPage(1);
+    setSearchParams({});
   };
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+    // Atualizar página na URL
+    const params = new URLSearchParams(searchParams);
+    params.set('page', page.toString());
+    setSearchParams(params);
   };
 
   return (
@@ -95,8 +156,10 @@ export const Vehicles: React.FC = () => {
       {/* Search and Filters */}
       <VehicleFilters
         filters={filters}
-        onFilterChange={handleFilterChange}
-        onSubmit={handleSearch}
+        onFiltersChange={handleFiltersChange}
+        onClearFilters={handleClearFilters}
+        brands={brands}
+        cities={cities}
       />
 
       {/* Vehicles List */}
