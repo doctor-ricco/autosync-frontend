@@ -21,6 +21,7 @@ import {
   X
 } from 'lucide-react';
 import apiService from '../../services/api';
+import { useFavorites } from '../../hooks/useFavorites';
 
 interface VehicleImage {
   id: number;
@@ -81,12 +82,12 @@ interface Vehicle {
 export const VehicleShow: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { isFavorite, toggleFavorite } = useFavorites();
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showImageModal, setShowImageModal] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -162,9 +163,10 @@ export const VehicleShow: React.FC = () => {
     }
   };
 
-  const toggleFavorite = () => {
-    setIsFavorite(!isFavorite);
-    // TODO: Implementar API de favoritos
+  const handleFavoriteClick = async () => {
+    if (vehicle) {
+      await toggleFavorite(vehicle.id);
+    }
   };
 
   if (loading) {
@@ -215,16 +217,16 @@ export const VehicleShow: React.FC = () => {
             </button>
             <div className="flex items-center space-x-4">
               <button
-                onClick={toggleFavorite}
+                onClick={handleFavoriteClick}
                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-                  isFavorite 
+                  vehicle && isFavorite(vehicle.id)
                     ? 'bg-red-100 text-red-600 hover:bg-red-200' 
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
-                {isFavorite ? <Heart className="h-5 w-5" /> : <HeartOff className="h-5 w-5" />}
+                {vehicle && isFavorite(vehicle.id) ? <Heart className="h-5 w-5" /> : <HeartOff className="h-5 w-5" />}
                 <span className="hidden sm:inline">
-                  {isFavorite ? 'Favorito' : 'Favoritar'}
+                  {vehicle && isFavorite(vehicle.id) ? 'Favorito' : 'Favoritar'}
                 </span>
               </button>
             </div>

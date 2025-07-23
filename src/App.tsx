@@ -1,27 +1,34 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './hooks/useAuth';
+import { AuthProvider } from './components/AuthProvider';
+import { QueryProvider } from './providers/QueryProvider';
 import { Layout } from './components/Layout';
 import { Home } from './pages/Home';
 import { Vehicles } from './pages/vehicles';
 import { VehicleShow } from './pages/vehicles/show';
+import { Favorites } from './pages/Favorites';
+import { Login } from './pages/Login';
+import { Register } from './pages/Register';
 import './index.css';
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <Layout>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/vehicles" element={<Vehicles />} />
-            <Route path="/vehicles/:id" element={<VehicleShow />} />
-            <Route path="/favorites" element={<div className="text-center py-12"><h1 className="text-2xl font-bold">Favoritos</h1><p className="text-gray-600">Em desenvolvimento...</p></div>} />
-            <Route path="/login" element={<div className="text-center py-12"><h1 className="text-2xl font-bold">Login</h1><p className="text-gray-600">Em desenvolvimento...</p></div>} />
-          </Routes>
-        </Layout>
-      </Router>
-    </AuthProvider>
+    <QueryProvider>
+      <AuthProvider>
+        <Router>
+          <Layout>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/vehicles" element={<Vehicles />} />
+              <Route path="/vehicles/:id" element={<VehicleShow />} />
+              <Route path="/favorites" element={<Favorites />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+            </Routes>
+          </Layout>
+        </Router>
+      </AuthProvider>
+    </QueryProvider>
   );
 }
 

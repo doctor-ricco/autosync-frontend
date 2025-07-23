@@ -1,37 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Car, Search, Star, MapPin, Calendar, Zap, RefreshCw } from 'lucide-react';
-import apiService from '../services/api';
-import { VehicleCard } from '../pages/vehicles/components/VehicleCard';
+import { useFeaturedVehicles } from '../hooks/useFeaturedVehicles';
+import { VehicleCard } from './vehicles/components/VehicleCard';
 
 export const Home: React.FC = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [featuredVehicles, setFeaturedVehicles] = useState<any[]>([]);
-  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-
-  useEffect(() => {
-    loadFeaturedVehicles();
-  }, []);
-
-  const loadFeaturedVehicles = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await apiService.getFeaturedVehicles();
-      if (response.success) {
-        setFeaturedVehicles(response.data);
-      } else {
-        setError('Erro ao carregar veículos em destaque');
-      }
-    } catch (error) {
-      console.error('Error loading featured vehicles:', error);
-      setError('Erro ao conectar com o servidor');
-    } finally {
-      setLoading(false);
-    }
-  };
+  
+  // Usar React Query para veículos em destaque
+  const { data: featuredVehicles = [], isLoading, error, refetch } = useFeaturedVehicles();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -122,7 +100,7 @@ export const Home: React.FC = () => {
           </Link>
         </div>
 
-        {loading ? (
+        {isLoading ? (
           <div className="text-center py-12">
             <RefreshCw className="h-8 w-8 text-primary-600 mx-auto mb-4 animate-spin" />
             <p className="text-gray-600">Carregando veículos em destaque...</p>
@@ -133,9 +111,9 @@ export const Home: React.FC = () => {
             <h3 className="text-lg font-medium text-gray-900 mb-2">
               Erro ao carregar dados
             </h3>
-            <p className="text-gray-600 mb-4">{error}</p>
+            <p className="text-gray-600 mb-4">{error.message}</p>
             <button
-              onClick={loadFeaturedVehicles}
+              onClick={() => refetch()}
               className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
             >
               Tentar novamente
@@ -143,13 +121,13 @@ export const Home: React.FC = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {featuredVehicles.map((vehicle) => (
+            {featuredVehicles.map((vehicle: any) => (
               <VehicleCard key={vehicle.id} vehicle={vehicle} />
             ))}
           </div>
         )}
 
-        {!loading && !error && featuredVehicles.length === 0 && (
+        {!isLoading && !error && featuredVehicles.length === 0 && (
           <div className="text-center py-12">
             <Car className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">

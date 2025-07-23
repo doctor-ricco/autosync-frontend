@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Car, RefreshCw } from 'lucide-react';
-import apiService from '../../services/api';
+import { useVehicles } from '../../hooks/useVehicles';
 import { VehicleCard } from './components/VehicleCard';
 import { VehicleFilters } from './components/VehicleFilters';
 import { VehiclePagination } from './components/VehiclePagination';
@@ -22,12 +22,7 @@ interface FilterState {
 
 export const Vehicles: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [loading, setLoading] = useState(true);
-  const [vehicles, setVehicles] = useState<any[]>([]);
-  const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalVehicles, setTotalVehicles] = useState(0);
   const [brands, setBrands] = useState<string[]>([]);
   const [cities, setCities] = useState<string[]>([]);
   
@@ -48,57 +43,51 @@ export const Vehicles: React.FC = () => {
     return urlFilters;
   });
 
-  useEffect(() => {
-    loadVehicles();
-    loadFilterOptions();
-  }, [currentPage, filters]);
-
-  const loadVehicles = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      // Preparar filtros para a API
-      const apiFilters: any = {};
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
-          // Converter nomes dos filtros para o formato da API
-          const apiKey = key === 'minPrice' ? 'min_price' :
-                        key === 'maxPrice' ? 'max_price' :
-                        key === 'minYear' ? 'min_year' :
-                        key === 'maxYear' ? 'max_year' :
-                        key === 'minMileage' ? 'min_mileage' :
-                        key === 'maxMileage' ? 'max_mileage' :
-                        key === 'fuelType' ? 'fuel_type' : key;
-          apiFilters[apiKey] = value;
-        }
-      });
-
-      const response = await apiService.getVehicles(apiFilters, currentPage);
-      
-      if (response.success) {
-        setVehicles(response.data);
-        setTotalPages(response.pagination.last_page);
-        setTotalVehicles(response.pagination.total);
-      } else {
-        setError('Erro ao carregar veículos');
-      }
-    } catch (error) {
-      console.error('Error loading vehicles:', error);
-      setError('Erro ao conectar com o servidor');
-    } finally {
-      setLoading(false);
-    }
+  // Preparar filtros para a API
+  const apiFilters: any = {
+    page: currentPage,
+    per_page: 12,
   };
+
+  // Adicionar filtros apenas se tiverem valor
+  if (filters.search) apiFilters.search = filters.search;
+  if (filters.brand) apiFilters.brand = filters.brand;
+  if (filters.city) apiFilters.city = filters.city;
+  if (filters.fuelType) apiFilters.fuel_type = filters.fuelType;
+  if (filters.transmission) apiFilters.transmission = filters.transmission;
+  if (filters.minPrice) apiFilters.min_price = filters.minPrice;
+  if (filters.maxPrice) apiFilters.max_price = filters.maxPrice;
+  if (filters.minYear) apiFilters.min_year = filters.minYear;
+  if (filters.maxYear) apiFilters.max_year = filters.maxYear;
+  if (filters.minMileage) apiFilters.min_mileage = filters.minMileage;
+  if (filters.maxMileage) apiFilters.max_mileage = filters.maxMileage;
+
+  // Usar React Query para carregar veículos
+  const { 
+    data: vehiclesData, 
+    isLoading, 
+    error, 
+    refetch 
+  } = useVehicles(apiFilters);
+
+  const vehicles = vehiclesData?.data || [];
+  const totalPages = vehiclesData?.pagination?.last_page || 1;
+  const totalVehicles = vehiclesData?.pagination?.total || 0;
+
+  // Carregar opções de filtros uma vez
+  useEffect(() => {
+    loadFilterOptions();
+  }, []);
 
   const loadFilterOptions = async () => {
     try {
       // Carregar marcas e cidades únicas dos veículos
-      const response = await apiService.getVehicles({}, 1);
-      if (response.success) {
-        const allVehicles = response.data;
-        const uniqueBrands = [...new Set(allVehicles.map(v => v.brand).filter((brand): brand is string => Boolean(brand)))].sort();
-        const uniqueCities = [...new Set(allVehicles.map(v => v.stand?.city).filter((city): city is string => Boolean(city)))].sort();
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/vehicles?per_page=1000`);
+      const data = await response.json();
+      if (data.success) {
+        const allVehicles = data.data;
+        const uniqueBrands = [...new Set(allVehicles.map((v: any) => v.brand).filter((brand: any): brand is string => Boolean(brand)))].sort() as string[];
+        const uniqueCities = [...new Set(allVehicles.map((v: any) => v.stand?.city).filter((city: any): city is string => Boolean(city)))].sort() as string[];
         setBrands(uniqueBrands);
         setCities(uniqueCities);
       }
@@ -163,7 +152,7 @@ export const Vehicles: React.FC = () => {
       />
 
       {/* Vehicles List */}
-      {loading ? (
+      {isLoading ? (
         <div className="text-center py-12">
           <RefreshCw className="h-8 w-8 text-primary-600 mx-auto mb-4 animate-spin" />
           <p className="text-gray-600">Carregando veículos...</p>
@@ -174,9 +163,9 @@ export const Vehicles: React.FC = () => {
           <h3 className="text-lg font-medium text-gray-900 mb-2">
             Erro ao carregar dados
           </h3>
-          <p className="text-gray-600 mb-4">{error}</p>
+          <p className="text-gray-600 mb-4">{error.message}</p>
           <button
-            onClick={loadVehicles}
+            onClick={() => refetch()}
             className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
           >
             Tentar novamente
@@ -185,7 +174,7 @@ export const Vehicles: React.FC = () => {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {vehicles.map((vehicle) => (
+            {vehicles.map((vehicle: any) => (
               <VehicleCard key={vehicle.id} vehicle={vehicle} />
             ))}
           </div>
@@ -199,7 +188,7 @@ export const Vehicles: React.FC = () => {
         </>
       )}
 
-      {!loading && !error && vehicles.length === 0 && (
+      {!isLoading && !error && vehicles.length === 0 && (
         <div className="text-center py-12">
           <Car className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
