@@ -7,7 +7,9 @@ import { VehicleCard } from './vehicles/components/VehicleCard';
 
 export const Favorites: React.FC = () => {
   const { user } = useAuth();
-  const { data: favorites = [], isLoading, error, refetch } = useFavorites();
+  const { data: favorites = [], isLoading, error, refetch } = useFavorites({
+    enabled: !!user, // Só carregar se usuário estiver logado
+  });
 
   if (!user) {
     return (

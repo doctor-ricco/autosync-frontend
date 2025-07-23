@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiService from '../services/api';
 
 // Hook para listar favoritos
-export const useFavorites = () => {
+export const useFavorites = (options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: ['favorites'],
     queryFn: async () => {
@@ -14,6 +14,7 @@ export const useFavorites = () => {
     },
     staleTime: 1 * 60 * 1000, // 1 minuto
     gcTime: 5 * 60 * 1000, // 5 minutos
+    enabled: options?.enabled !== false, // Padrão é true, mas pode ser desabilitado
   });
 };
 
@@ -62,7 +63,7 @@ export const useRemoveFavorite = () => {
 };
 
 // Hook para verificar se um veículo é favorito
-export const useCheckFavorite = (vehicleId: number) => {
+export const useCheckFavorite = (vehicleId: number, options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: ['favorites', 'check', vehicleId],
     queryFn: async () => {
@@ -74,5 +75,6 @@ export const useCheckFavorite = (vehicleId: number) => {
     },
     staleTime: 30 * 1000, // 30 segundos
     gcTime: 2 * 60 * 1000, // 2 minutos
+    enabled: options?.enabled !== false, // Padrão é true, mas pode ser desabilitado
   });
 }; 

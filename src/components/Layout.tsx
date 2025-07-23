@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Car, Home, Heart, User, Menu, X } from 'lucide-react';
+import { Car, Home, Heart, User, Menu, X, LogOut } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -8,6 +9,7 @@ interface LayoutProps {
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
+  const { user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
   const navigation = [
@@ -15,6 +17,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: 'Veículos', href: '/vehicles', icon: Car },
     { name: 'Favoritos', href: '/favorites', icon: Heart },
   ];
+
+  const handleLogout = () => {
+    logout();
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -54,20 +60,35 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
             {/* User Menu */}
             <div className="hidden md:flex items-center space-x-4">
-              <div className="flex items-center space-x-3">
-                <Link
-                  to="/login"
-                  className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
-                >
-                  Entrar
-                </Link>
-                <Link
-                  to="/register"
-                  className="btn-primary"
-                >
-                  Registar
-                </Link>
-              </div>
+              {user ? (
+                <div className="flex items-center space-x-3">
+                  <span className="text-sm text-gray-600">
+                    Olá, {user.name}
+                  </span>
+                  <button
+                    onClick={handleLogout}
+                    className="text-sm text-gray-600 hover:text-gray-900 transition-colors flex items-center space-x-1"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>Sair</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-3">
+                  <Link
+                    to="/login"
+                    className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                  >
+                    Entrar
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="btn-primary"
+                  >
+                    Registar
+                  </Link>
+                </div>
+              )}
             </div>
 
             {/* Mobile menu button */}
@@ -111,20 +132,40 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               })}
               
               <div className="px-3 py-2">
-                <Link
-                  to="/login"
-                  className="text-sm text-gray-600 hover:text-gray-900 transition-colors block"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Entrar
-                </Link>
-                <Link
-                  to="/register"
-                  className="text-sm text-primary-600 hover:text-primary-700 transition-colors block mt-1"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Registar
-                </Link>
+                {user ? (
+                  <div className="space-y-2">
+                    <span className="text-sm text-gray-600 block">
+                      Olá, {user.name}
+                    </span>
+                    <button
+                      onClick={() => {
+                        handleLogout();
+                        setMobileMenuOpen(false);
+                      }}
+                      className="text-sm text-gray-600 hover:text-gray-900 transition-colors flex items-center space-x-1"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      <span>Sair</span>
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <Link
+                      to="/login"
+                      className="text-sm text-gray-600 hover:text-gray-900 transition-colors block"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Entrar
+                    </Link>
+                    <Link
+                      to="/register"
+                      className="text-sm text-primary-600 hover:text-primary-700 transition-colors block mt-1"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Registar
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </div>

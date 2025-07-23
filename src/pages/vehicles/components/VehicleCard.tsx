@@ -29,11 +29,13 @@ interface VehicleCardProps {
 
 export const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle }) => {
   const { user } = useAuth();
-  const { data: favoriteData } = useCheckFavorite(vehicle.id);
+  const { data: favoriteData } = useCheckFavorite(vehicle.id, {
+    enabled: !!user, // Só verificar se usuário estiver logado
+  });
   const addFavorite = useAddFavorite();
   const removeFavorite = useRemoveFavorite();
 
-  const isFavorite = favoriteData?.is_favorite || false;
+  const isFavorite = user ? (favoriteData?.is_favorite || false) : false;
   const isLoading = addFavorite.isPending || removeFavorite.isPending;
 
   const formatPrice = (price: number) => {

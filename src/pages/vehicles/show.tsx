@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, 
   Heart, 
@@ -20,8 +20,10 @@ import {
   ChevronRight,
   X
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import apiService from '../../services/api';
-import { useFavorites } from '../../hooks/useFavorites';
+import { useAuth } from '../../hooks/useAuth';
+import { useCheckFavorite, useAddFavorite, useRemoveFavorite } from '../../hooks/useFavorites';
 
 interface VehicleImage {
   id: number;
@@ -82,40 +84,37 @@ interface Vehicle {
 export const VehicleShow: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { isFavorite, toggleFavorite } = useFavorites();
-  const [vehicle, setVehicle] = useState<Vehicle | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+  
+  // Carregar dados do veículo
+  const { data: vehicleData, isLoading, isError, error } = useQuery({
+    queryKey: ['vehicle', id],
+    queryFn: async () => {
+      const response = await apiService.getVehicle(Number(id));
+      if (!response.success) {
+        throw new Error(response.message || 'Erro ao carregar veículo');
+      }
+      return response.data;
+    },
+    enabled: !!id,
+  });
+
+  const vehicle = vehicleData;
+  
+  // Hooks de favoritos - só verificar se usuário estiver logado
+  const { data: favoriteData } = useCheckFavorite(Number(id), {
+    enabled: !!user && !!id, // Só executar se usuário estiver logado
+  });
+  const addFavorite = useAddFavorite();
+  const removeFavorite = useRemoveFavorite();
+
+  const isFavorite = user ? (favoriteData?.is_favorite || false) : false;
+  const isLoadingFavorite = addFavorite.isPending || removeFavorite.isPending;
+
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showImageModal, setShowImageModal] = useState(false);
 
-  useEffect(() => {
-    if (id) {
-      loadVehicle();
-    }
-  }, [id]);
-
-  const loadVehicle = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await apiService.getVehicle(Number(id));
-      if (response.success) {
-        setVehicle(response.data);
-        // Encontrar índice da imagem primária
-        const primaryIndex = response.data.images.findIndex((img: VehicleImage) => img.is_primary);
-        setCurrentImageIndex(primaryIndex >= 0 ? primaryIndex : 0);
-      } else {
-        setError('Erro ao carregar veículo');
-      }
-    } catch (error) {
-      console.error('Error loading vehicle:', error);
-      setError('Erro ao conectar com o servidor');
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Funções auxiliares
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('pt-PT', {
       style: 'currency',
@@ -164,12 +163,25 @@ export const VehicleShow: React.FC = () => {
   };
 
   const handleFavoriteClick = async () => {
-    if (vehicle) {
-      await toggleFavorite(vehicle.id);
+    if (!user) {
+      window.location.href = '/login';
+      return;
+    }
+
+    if (vehicle && !isLoadingFavorite) {
+      try {
+        if (isFavorite) {
+          await removeFavorite.mutateAsync(vehicle.id);
+        } else {
+          await addFavorite.mutateAsync(vehicle.id);
+        }
+      } catch (error) {
+        console.error('Error toggling favorite:', error);
+      }
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -180,7 +192,7 @@ export const VehicleShow: React.FC = () => {
     );
   }
 
-  if (error || !vehicle) {
+  if (isError || !vehicle) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -188,7 +200,7 @@ export const VehicleShow: React.FC = () => {
           <h3 className="text-lg font-medium text-gray-900 mb-2">
             Veículo não encontrado
           </h3>
-          <p className="text-gray-600 mb-4">{error || 'O veículo solicitado não existe.'}</p>
+          <p className="text-gray-600 mb-4">{error?.message || 'O veículo solicitado não existe.'}</p>
           <button
             onClick={() => navigate('/vehicles')}
             className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
@@ -218,15 +230,16 @@ export const VehicleShow: React.FC = () => {
             <div className="flex items-center space-x-4">
               <button
                 onClick={handleFavoriteClick}
+                disabled={isLoadingFavorite}
                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-                  vehicle && isFavorite(vehicle.id)
+                  vehicle && isFavorite
                     ? 'bg-red-100 text-red-600 hover:bg-red-200' 
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
+                } ${isLoadingFavorite ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                {vehicle && isFavorite(vehicle.id) ? <Heart className="h-5 w-5" /> : <HeartOff className="h-5 w-5" />}
+                {vehicle && isFavorite ? <Heart className="h-5 w-5" /> : <HeartOff className="h-5 w-5" />}
                 <span className="hidden sm:inline">
-                  {vehicle && isFavorite(vehicle.id) ? 'Favorito' : 'Favoritar'}
+                  {vehicle && isFavorite ? 'Favorito' : 'Favoritar'}
                 </span>
               </button>
             </div>
