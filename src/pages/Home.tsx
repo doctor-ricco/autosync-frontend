@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Car, Search, Star, MapPin, Calendar, Zap, RefreshCw } from 'lucide-react';
 import apiService from '../services/api';
 import { VehicleCard } from '../pages/vehicles/components/VehicleCard';
 
 export const Home: React.FC = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [featuredVehicles, setFeaturedVehicles] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     loadFeaturedVehicles();
@@ -31,6 +33,13 @@ export const Home: React.FC = () => {
     }
   };
 
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchTerm.trim()) {
+      navigate(`/vehicles?search=${encodeURIComponent(searchTerm.trim())}`);
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Hero Section */}
@@ -46,19 +55,24 @@ export const Home: React.FC = () => {
           
           {/* Search Bar */}
           <div className="max-w-2xl mx-auto">
-            <div className="flex bg-white rounded-lg shadow-lg overflow-hidden">
+            <form onSubmit={handleSearch} className="flex bg-white rounded-lg shadow-lg overflow-hidden">
               <div className="flex-1 flex items-center px-4">
                 <Search className="h-5 w-5 text-gray-400 mr-3" />
                 <input
                   type="text"
                   placeholder="Procurar por marca, modelo ou características..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                   className="flex-1 py-3 text-gray-900 placeholder-gray-500 focus:outline-none"
                 />
               </div>
-              <button className="bg-primary-600 hover:bg-primary-700 px-6 py-3 text-white font-medium transition-colors">
+              <button 
+                type="submit"
+                className="bg-primary-600 hover:bg-primary-700 px-6 py-3 text-white font-medium transition-colors"
+              >
                 Procurar
               </button>
-            </div>
+            </form>
           </div>
         </div>
       </section>
