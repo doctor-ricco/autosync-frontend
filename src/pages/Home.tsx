@@ -1,15 +1,55 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { Car, Search, Star, MapPin, Calendar, Zap, RefreshCw } from 'lucide-react';
+import apiService from '../services/api';
 
 export const Home: React.FC = () => {
+  const [loading, setLoading] = useState(true);
+  const [featuredVehicles, setFeaturedVehicles] = useState<any[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadFeaturedVehicles();
+  }, []);
+
+  const loadFeaturedVehicles = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await apiService.getVehicles({ is_featured: true }, 1);
+      if (response.success) {
+        setFeaturedVehicles(response.data);
+      } else {
+        setError('Erro ao carregar veículos em destaque');
+      }
+    } catch (error) {
+      console.error('Error loading featured vehicles:', error);
+      setError('Erro ao conectar com o servidor');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('pt-PT', {
+      style: 'currency',
+      currency: 'EUR',
+    }).format(price);
+  };
+
+  const formatMileage = (mileage: number) => {
+    return new Intl.NumberFormat('pt-PT').format(mileage) + ' km';
+  };
+
   return (
     <div className="space-y-8">
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-lg p-8">
+      <section className="bg-gradient-to-r from-primary-600 to-primary-800 text-white rounded-lg p-8">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-4xl font-bold mb-4">
             Encontre o Carro dos Seus Sonhos
           </h1>
-          <p className="text-xl mb-8 text-blue-100">
+          <p className="text-xl mb-8 text-primary-100">
             Milhares de veículos usados e seminovos em Portugal. 
             Compre e venda com confiança.
           </p>
@@ -18,14 +58,14 @@ export const Home: React.FC = () => {
           <div className="max-w-2xl mx-auto">
             <div className="flex bg-white rounded-lg shadow-lg overflow-hidden">
               <div className="flex-1 flex items-center px-4">
-                <span className="text-gray-400 mr-3">🔍</span>
+                <Search className="h-5 w-5 text-gray-400 mr-3" />
                 <input
                   type="text"
                   placeholder="Procurar por marca, modelo ou características..."
                   className="flex-1 py-3 text-gray-900 placeholder-gray-500 focus:outline-none"
                 />
               </div>
-              <button className="bg-blue-600 hover:bg-blue-700 px-6 py-3 text-white font-medium transition-colors">
+              <button className="bg-primary-600 hover:bg-primary-700 px-6 py-3 text-white font-medium transition-colors">
                 Procurar
               </button>
             </div>
@@ -36,8 +76,8 @@ export const Home: React.FC = () => {
       {/* Features Section */}
       <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="card text-center">
-          <div className="bg-blue-100 w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-4">
-            <span className="text-blue-600 text-xl">🚗</span>
+          <div className="bg-primary-100 w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-4">
+            <Car className="h-6 w-6 text-primary-600" />
           </div>
           <h3 className="text-lg font-semibold mb-2">Veículos Verificados</h3>
           <p className="text-gray-600">
@@ -46,8 +86,8 @@ export const Home: React.FC = () => {
         </div>
 
         <div className="card text-center">
-          <div className="bg-blue-100 w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-4">
-            <span className="text-blue-600 text-xl">📍</span>
+          <div className="bg-primary-100 w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-4">
+            <MapPin className="h-6 w-6 text-primary-600" />
           </div>
           <h3 className="text-lg font-semibold mb-2">Standards Confiáveis</h3>
           <p className="text-gray-600">
@@ -56,8 +96,8 @@ export const Home: React.FC = () => {
         </div>
 
         <div className="card text-center">
-          <div className="bg-blue-100 w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-4">
-            <span className="text-blue-600 text-xl">⚡</span>
+          <div className="bg-primary-100 w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-4">
+            <Zap className="h-6 w-6 text-primary-600" />
           </div>
           <h3 className="text-lg font-semibold mb-2">Processo Rápido</h3>
           <p className="text-gray-600">
@@ -70,44 +110,91 @@ export const Home: React.FC = () => {
       <section>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-gray-900">Veículos em Destaque</h2>
-          <a
-            href="/vehicles"
-            className="text-blue-600 hover:text-blue-700 font-medium transition-colors"
+          <Link
+            to="/vehicles"
+            className="text-primary-600 hover:text-primary-700 font-medium transition-colors"
           >
             Ver todos →
-          </a>
+          </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Placeholder vehicles */}
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="card hover:shadow-lg transition-shadow duration-200">
-              <div className="bg-gray-200 h-48 rounded-lg mb-4 flex items-center justify-center">
-                <span className="text-gray-500 text-2xl">🚗</span>
-              </div>
-              
-              <div className="space-y-2">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Veículo de Exemplo {i}
-                </h3>
-                
-                <div className="flex items-center text-sm text-gray-600 space-x-4">
-                  <span>2023</span>
-                  <span>50.000 km</span>
+        {loading ? (
+          <div className="text-center py-12">
+            <RefreshCw className="h-8 w-8 text-primary-600 mx-auto mb-4 animate-spin" />
+            <p className="text-gray-600">Carregando veículos em destaque...</p>
+          </div>
+        ) : error ? (
+          <div className="text-center py-12">
+            <Car className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              Erro ao carregar dados
+            </h3>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button
+              onClick={loadFeaturedVehicles}
+              className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+            >
+              Tentar novamente
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {featuredVehicles.map((vehicle) => (
+              <Link
+                key={vehicle.id}
+                to={`/vehicles/${vehicle.id}`}
+                className="card hover:shadow-lg transition-shadow duration-200 group"
+              >
+                <div className="relative">
+                  <div className="w-full h-48 bg-gray-200 rounded-lg mb-4 flex items-center justify-center">
+                    <Car className="h-12 w-12 text-gray-400" />
+                  </div>
+                  {vehicle.is_featured && (
+                    <div className="absolute top-2 right-2 bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full text-xs font-medium flex items-center">
+                      <Star className="h-3 w-3 mr-1" />
+                      Destaque
+                    </div>
+                  )}
                 </div>
                 
-                <div className="flex items-center justify-between">
-                  <span className="text-lg font-bold text-blue-600">
-                    €25.000
-                  </span>
-                  <span className="text-sm text-gray-500">
-                    Lisboa
-                  </span>
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold text-gray-900 group-hover:text-primary-600 transition-colors">
+                    {vehicle.brand} {vehicle.model}
+                  </h3>
+                  
+                  <div className="flex items-center text-sm text-gray-600 space-x-4">
+                    <span className="flex items-center">
+                      <Calendar className="h-4 w-4 mr-1" />
+                      {vehicle.year}
+                    </span>
+                    <span>{formatMileage(vehicle.mileage)}</span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-lg font-bold text-primary-600">
+                      {formatPrice(vehicle.price)}
+                    </span>
+                    <span className="text-sm text-gray-500">
+                      {vehicle.stand?.city || 'Localização não disponível'}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            </div>
-          ))}
-        </div>
+              </Link>
+            ))}
+          </div>
+        )}
+
+        {!loading && !error && featuredVehicles.length === 0 && (
+          <div className="text-center py-12">
+            <Car className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              Nenhum veículo em destaque
+            </h3>
+            <p className="text-gray-600">
+              Não há veículos em destaque no momento.
+            </p>
+          </div>
+        )}
       </section>
 
       {/* CTA Section */}
@@ -118,13 +205,13 @@ export const Home: React.FC = () => {
         <p className="text-gray-300 mb-6">
           Explore milhares de veículos e encontre a melhor oferta para si.
         </p>
-        <a
-          href="/vehicles"
+        <Link
+          to="/vehicles"
           className="btn-primary inline-flex items-center"
         >
-          <span className="mr-2">🔍</span>
+          <Search className="h-4 w-4 mr-2" />
           Explorar Veículos
-        </a>
+        </Link>
       </section>
     </div>
   );
