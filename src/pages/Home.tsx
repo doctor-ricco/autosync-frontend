@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Car, Search, Star, MapPin, Calendar, Zap, RefreshCw } from 'lucide-react';
 import apiService from '../services/api';
+import { VehicleCard } from '../pages/vehicles/components/VehicleCard';
 
 export const Home: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -16,7 +17,7 @@ export const Home: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await apiService.getVehicles({ is_featured: true }, 1);
+      const response = await apiService.getFeaturedVehicles();
       if (response.success) {
         setFeaturedVehicles(response.data);
       } else {
@@ -28,17 +29,6 @@ export const Home: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('pt-PT', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(price);
-  };
-
-  const formatMileage = (mileage: number) => {
-    return new Intl.NumberFormat('pt-PT').format(mileage) + ' km';
   };
 
   return (
@@ -140,46 +130,7 @@ export const Home: React.FC = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {featuredVehicles.map((vehicle) => (
-              <Link
-                key={vehicle.id}
-                to={`/vehicles/${vehicle.id}`}
-                className="card hover:shadow-lg transition-shadow duration-200 group"
-              >
-                <div className="relative">
-                  <div className="w-full h-48 bg-gray-200 rounded-lg mb-4 flex items-center justify-center">
-                    <Car className="h-12 w-12 text-gray-400" />
-                  </div>
-                  {vehicle.is_featured && (
-                    <div className="absolute top-2 right-2 bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full text-xs font-medium flex items-center">
-                      <Star className="h-3 w-3 mr-1" />
-                      Destaque
-                    </div>
-                  )}
-                </div>
-                
-                <div className="space-y-2">
-                  <h3 className="text-lg font-semibold text-gray-900 group-hover:text-primary-600 transition-colors">
-                    {vehicle.brand} {vehicle.model}
-                  </h3>
-                  
-                  <div className="flex items-center text-sm text-gray-600 space-x-4">
-                    <span className="flex items-center">
-                      <Calendar className="h-4 w-4 mr-1" />
-                      {vehicle.year}
-                    </span>
-                    <span>{formatMileage(vehicle.mileage)}</span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <span className="text-lg font-bold text-primary-600">
-                      {formatPrice(vehicle.price)}
-                    </span>
-                    <span className="text-sm text-gray-500">
-                      {vehicle.stand?.city || 'Localização não disponível'}
-                    </span>
-                  </div>
-                </div>
-              </Link>
+              <VehicleCard key={vehicle.id} vehicle={vehicle} />
             ))}
           </div>
         )}
