@@ -30,12 +30,14 @@ export const useAddFavorite = () => {
       }
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data, vehicleId) => {
       // Invalidar cache de favoritos
       queryClient.invalidateQueries({ queryKey: ['favorites'] });
       // Invalidar cache de veículos para atualizar status de favorito
       queryClient.invalidateQueries({ queryKey: ['vehicles'] });
       queryClient.invalidateQueries({ queryKey: ['featured-vehicles'] });
+      // Invalidar cache específico do checkFavorite para este veículo
+      queryClient.invalidateQueries({ queryKey: ['favorites', 'check', vehicleId] });
     },
   });
 };
@@ -52,12 +54,14 @@ export const useRemoveFavorite = () => {
       }
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data, vehicleId) => {
       // Invalidar cache de favoritos
       queryClient.invalidateQueries({ queryKey: ['favorites'] });
       // Invalidar cache de veículos para atualizar status de favorito
       queryClient.invalidateQueries({ queryKey: ['vehicles'] });
       queryClient.invalidateQueries({ queryKey: ['featured-vehicles'] });
+      // Invalidar cache específico do checkFavorite para este veículo
+      queryClient.invalidateQueries({ queryKey: ['favorites', 'check', vehicleId] });
     },
   });
 };
